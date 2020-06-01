@@ -17,7 +17,7 @@
 #include "csr_wifi_hip_conversions.h"
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,11,0)
-#include <linux/sched/types.h>
+#include <uapi/linux/sched/types.h>
 #endif
 
 

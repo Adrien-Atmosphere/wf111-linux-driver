@@ -148,7 +148,9 @@ static int uf_net_ioctl(struct net_device *dev, struct ifreq *rq, int cmd);
 static int uf_net_stop(struct net_device *dev);
 static struct net_device_stats *uf_net_get_stats(struct net_device *dev);
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,19,0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,2,0)
+static u16 uf_net_select_queue(struct net_device *dev, struct sk_buff *skb, struct net_device *sb_dev);
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(4,19,0)
 static u16 uf_net_select_queue(struct net_device *dev, struct sk_buff *skb, struct net_device *sb_dev, select_queue_fallback_t fallback);
 #elif LINUX_VERSION_CODE >= KERNEL_VERSION(3,14,0)
 static u16 uf_net_select_queue(struct net_device *dev, struct sk_buff *skb, void *accel_priv, select_queue_fallback_t fallback);
@@ -1020,7 +1022,9 @@ get_packet_priority(unifi_priv_t *priv, struct sk_buff *skb, const struct ethhdr
  * ---------------------------------------------------------------------------
  */
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,19,0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,2,0)
+static u16 uf_net_select_queue(struct net_device *dev, struct sk_buff *skb, struct net_device *sb_dev)
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(4,19,0)
 static u16 uf_net_select_queue(struct net_device *dev, struct sk_buff *skb, struct net_device *sb_dev, select_queue_fallback_t fallback)
 #elif LINUX_VERSION_CODE >= KERNEL_VERSION(3,14,0)
 static u16 uf_net_select_queue(struct net_device *dev, struct sk_buff *skb, void *accel_priv, select_queue_fallback_t fallback)
