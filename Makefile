@@ -9,7 +9,8 @@ TOOLS_PATH := $(PWD)/csr/os_linux/tools
 SCRIPT_PATH := $(PWD)/scripts
 SYNERGY_ROOT := $(PWD)/csr/synergy
 
-OUTPUT = $(PWD)/output
+DESTDIR ?= $(PWD)/output
+OUTPUT = $(DESTDIR)
 
 include $(SYNERGY_ROOT)/paths.mk
 include $(WIFI_ROOT)/ver.mk
