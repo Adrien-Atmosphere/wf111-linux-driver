@@ -114,21 +114,23 @@ install_android: unifi_sdio_android install
 install_static: install
 	@cp $(TOOLS_PATH)/static/unifi_helper $(TOOLS_PATH)/static/unifi_config $(OUTPUT_BIN)
 
-install: unifi_sdio unifi_config unifi_helper
-	@mkdir -p $(OUTPUT_BIN)
-	@mkdir -p $(OUTPUT_FIRMWARE)
-	@cp $(TOOLS_PATH)/unififw $(TOOLS_PATH)/unifi_helper $(TOOLS_PATH)/unifi_config $(OUTPUT_BIN)
-	@cp $(FIRMWARE_PATH)/*.xbv $(OUTPUT_FIRMWARE)
-	@cp $(MIB_PATH)/*.dat $(OUTPUT_FIRMWARE)
-	@ln -sf $(DEFAULT_MIB) $(OUTPUT_FIRMWARE)/ufmib.dat
+install: unifi_sdio unifi_config unifi_helper install-tools
 	@if [ -z "$(OUTPUT_MODULE)" ]; then \
 		$(MAKE) unifi_sdio_install; \
 	else \
 		mkdir -p $(OUTPUT_MODULE) && cp $(DRIVER_PATH)/unifi_sdio.ko $(OUTPUT_MODULE); \
 	fi
 
+install-tools:
+	mkdir -p $(OUTPUT_BIN)
+	mkdir -p $(OUTPUT_FIRMWARE)
+	cp $(TOOLS_PATH)/unififw $(TOOLS_PATH)/unifi_helper $(TOOLS_PATH)/unifi_config $(OUTPUT_BIN)
+	cp $(FIRMWARE_PATH)/*.xbv $(OUTPUT_FIRMWARE)
+	cp $(MIB_PATH)/*.dat $(OUTPUT_FIRMWARE)
+	ln -sf $(DEFAULT_MIB) $(OUTPUT_FIRMWARE)/ufmib.dat
+
 
 clean: unifi_sdio_clean unifi_config_clean unifi_helper_clean
 	@rm -rf $(OUTPUT)
 
-.PHONY: clean unifi_sdio unifi_helper
+.PHONY: clean unifi_sdio unifi_helper install-tools
