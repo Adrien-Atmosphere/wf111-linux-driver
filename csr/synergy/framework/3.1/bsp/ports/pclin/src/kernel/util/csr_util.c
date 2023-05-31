@@ -9,7 +9,11 @@
 *****************************************************************************/
 
 #include <linux/kernel.h>
+#ifdef __KERNEL__
+#include <linux/stdarg.h>
+#else
 #include <stdarg.h>
+#endif
 
 #include "csr_types.h"
 #include "csr_pmem.h"
