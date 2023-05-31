@@ -26,8 +26,12 @@
 /*
  * Needed for core/signals.c
  */
-#include <stddef.h>
 
+#ifdef __KERNEL__
+#include <linux/stddef.h>
+#else
+#include <stddef.h>
+#endif
 
 /* Define INLINE directive*/
 #define INLINE      inline
