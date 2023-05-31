@@ -2434,10 +2434,10 @@ indicate_rx_skb(unifi_priv_t *priv, CsrUint16 ifTag, CsrUint8* dst_a, CsrUint8* 
 #ifdef CSR_WIFI_NAPI_ENABLE
         napi_enqueue(&priv->interfacePriv[ifTag]->napi_skb_list, skb);
 #else
-#ifdef CSR_WIFI_USE_NETIF_RX
-        netif_rx(skb);
+#if LINUX_VERSION_CODE > KERNEL_VERSION(6,1,0)
+	netif_rx(skb);
 #else
-        netif_rx_ni(skb);
+	netif_rx_ni(skb);
 #endif
 #endif
  

@@ -213,7 +213,11 @@ netrx_radiotap(unifi_priv_t *priv,
     memset(skb->cb, 0, sizeof(skb->cb));
 
     /* Pass up to Linux network stack */
-    netif_rx_ni(skb);
+#if LINUX_VERSION_CODE > KERNEL_VERSION(6,1,0)
+	netif_rx(skb);
+#else
+	netif_rx_ni(skb);
+#endif
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4,11,0)
     dev->last_rx = jiffies;
@@ -354,7 +358,11 @@ netrx_prism(unifi_priv_t *priv,
     memset(skb->cb, 0, sizeof(skb->cb));
 
     /* Pass up to Linux network stack */
-    netif_rx_ni(skb);
+#if LINUX_VERSION_CODE > KERNEL_VERSION(6,1,0)
+	netif_rx(skb);
+#else
+	netif_rx_ni(skb);
+#endif
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4,11,0)
     dev->last_rx = jiffies;
