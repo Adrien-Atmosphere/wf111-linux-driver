@@ -42,7 +42,6 @@ void *CsrPmemAllocDebug(CsrSize size,
 #define CsrPmemAlloc(sz) CsrPmemAllocDebug((sz), __FILE__, __LINE__)
 #else
 void *CsrPmemAlloc(CsrSize size);
-void *CsrPmemAllocVirtual(CsrSize size);
 #endif
 
 
@@ -78,7 +77,6 @@ void *CsrPmemAllocVirtual(CsrSize size);
 
 *****************************************************************************/
 void CsrPmemFree(void *ptr);
-void CsrPmemFreeVirtual(void *ptr);
 
 
 /*****************************************************************************

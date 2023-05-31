@@ -3477,21 +3477,6 @@ extern const CsrCharString *CsrWifiSmeDownstreamPrimNames[CSR_WIFI_SME_PRIM_DOWN
 #define CsrWifiSmeSetTimingsSend(src__, data__) \
     CsrWifiSmeSetTimingsSendTo(CSR_WIFI_SME_LIB_DESTINATION_QUEUE, src__, data__)
 
-#define CsrWifiSmeSetMaxResultsCreate(msg__, dst__, src__, data__) \
-    msg__ = (CsrWifiSmeSetMaxResults *) CsrPmemAlloc(sizeof(CsrWifiSmeSetMaxResults)); \
-    CsrWifiFsmEventInit(&msg__->common, CSR_WIFI_SME_PRIM, CSR_WIFI_SME_SET_MAX_RESULTS, dst__, src__); \
-    msg__->value = (data__);
-
-#define CsrWifiSmeSetMaxResultsSendTo(dst__, src__, data__) \
-    { \
-        CsrWifiSmeSetMaxResults *msg__; \
-        CsrWifiSmeSetMaxResultsCreate(msg__, dst__, src__, data__); \
-        CsrMsgTransport(dst__, CSR_WIFI_SME_PRIM, msg__); \
-    }
-
-#define CsrWifiSmeSetMaxResultsSend(src__, data__) \
-    CsrWifiSmeSetMaxResultsSendTo(CSR_WIFI_SME_LIB_DESTINATION_QUEUE, src__, data__)
-
 /*******************************************************************************
 
   NAME

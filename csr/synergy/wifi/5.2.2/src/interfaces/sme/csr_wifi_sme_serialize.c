@@ -2427,49 +2427,6 @@ void CsrWifiSmeSetTimingsSerFree(void *voidPrimitivePointer)
 
 /*****  /TIMINGS */
 
-/***** Max scan results */
-
-CsrSize CsrWifiSmeSetMaxResultsSizeof(void *msg)
-{
-    CsrSize bufferSize = 2;
-
-    /* Calculate the Size of the Serialised Data. Could be more efficient (Try 8) */
-    bufferSize += 1; /* CsrUint8 primitive->value */
-    return bufferSize;
-}
-
-
-CsrUint8* CsrWifiSmeSetMaxResultsSer(CsrUint8 *ptr, CsrSize *len, void *msg)
-{
-    CsrWifiSmeSetMaxResults *primitive = (CsrWifiSmeSetMaxResults *)msg;
-    *len = 0;
-    CsrUint16Ser(ptr, len, primitive->common.type);
-    CsrMemCpySer(ptr, len, (const void *) &primitive->value, ((CsrUint16)1));
-    return(ptr);
-}
-
-
-void* CsrWifiSmeSetMaxResultsDes(CsrUint8 *buffer, CsrSize length)
-{
-    CsrWifiSmeSetMaxResults *primitive = (CsrWifiSmeSetMaxResults *) CsrPmemAlloc(sizeof(CsrWifiSmeSetMaxResults));
-    CsrSize offset;
-    offset = 0;
-
-    CsrUint16Des(&primitive->common.type, buffer, &offset);
-    CsrMemCpyDes(&primitive->value, buffer, &offset, ((CsrUint16)1));
-
-    return primitive;
-}
-
-
-void CsrWifiSmeSetMaxResultsSerFree(void *voidPrimitivePointer)
-{
-    CsrWifiSmeSetMaxResults *primitive = (CsrWifiSmeSetMaxResults *) voidPrimitivePointer;
-    CsrPmemFree(primitive);
-}
-
-/*****  /Max scan results */
-
 
 CsrSize CsrWifiSmeAdhocConfigGetCfmSizeof(void *msg)
 {

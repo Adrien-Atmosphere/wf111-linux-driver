@@ -23,10 +23,6 @@
 #include "csr_panic.h"
 #include "csr_pmem.h"
 
-//[AESYS]
-#include "linux/vmalloc.h"
-#include "linux/random.h"
-
 void *CsrPmemAlloc(CsrSize size)
 {
     void *ret;
@@ -49,32 +45,4 @@ void CsrPmemFree(void *ptr)
     }
 
     kfree(ptr);
-}
-
-// [AESYS]
-void *CsrPmemAllocVirtual(CsrSize size)
-{
-    void *ret = NULL;
-
-    /* //!!
-    // Sometimes simulate an allocation failure
-    char c;
-    get_random_bytes(&c, 1);
-
-    if(c % 3 == 0)
-        return(ret);
-    */
-
-    ret = vmalloc(size);
-
-    return(ret);
-}
-
-// [AESYS]
-void CsrPmemFreeVirtual(void *ptr)
-{
-    if(!ptr)
-        return;
-
-    vfree(ptr);
 }

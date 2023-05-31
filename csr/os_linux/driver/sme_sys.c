@@ -748,6 +748,14 @@ void CsrWifiRouterCtrlPortConfigureReqHandler(void *drvpriv, CsrWifiFsmEvent *ms
              * only needed to update the peer protection status
              */
             interfacePriv->protect = req->setProtection;
+            if (interfacePriv->handshakeStartTime != 0 || req->setProtection)
+            {
+                if (interfacePriv->handshakeStartTime + HANDSHAKE_SAFE_TIME_US < CsrTimeGet(NULL) || req->setProtection)
+                {
+                    interfacePriv->handshakeStarted = FALSE;
+                    interfacePriv->handshakeStartTime = 0;
+                }
+            }
             break;
         case CSR_WIFI_ROUTER_CTRL_MODE_AP:
         case CSR_WIFI_ROUTER_CTRL_MODE_P2PGO:
