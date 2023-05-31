@@ -95,18 +95,22 @@ static int uf_proc_open(struct inode *inode, struct file *file)
 {
     size_t size = UNIFI_DEBUG_TXT_BUFFER;
     char *buf = kmalloc(size, GFP_KERNEL);
-    void *pde_data;
+    void *pdata;
     int ret;
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
-    pde_data = PDE(inode)->data;
+    pdata = PDE(inode)->data;
+#endif
+
+#if LINUX_VERSION_CODE > KERNEL_VERSION(6, 1, 0)
+    pdata = pde_data(inode);
 #else
-    pde_data = PDE_DATA(inode);
+    pdata = PDE_DATA(inode);
 #endif
 
     if (!buf)
         return -ENOMEM;
-    ret = single_open(file, uf_proc_show, pde_data);
+    ret = single_open(file, uf_proc_show, pdata);
     if (ret) {
         kfree(buf);
         return ret;
