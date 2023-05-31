@@ -116,6 +116,14 @@ static int uf_proc_open(struct inode *inode, struct file *file)
     return 0;
 }
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,6,0)
+static const struct proc_ops uf_proc_fops = {
+    .proc_open       = uf_proc_open,
+    .proc_read       = seq_read,
+    .proc_lseek      = seq_lseek,
+    .proc_release    = single_release,
+};
+#else
 static const struct file_operations uf_proc_fops = {
     .open       = uf_proc_open,
     .read       = seq_read,
@@ -123,6 +131,7 @@ static const struct file_operations uf_proc_fops = {
     .release    = single_release,
 };
 
+#endif /* LINUX_VERSION_CODE */
 #endif /* CONFIG_PROC_FS */
 
 #ifdef CSR_WIFI_RX_PATH_SPLIT
@@ -956,7 +965,7 @@ uf_proc_show(struct seq_file *m, void *v)
         return 0;
     }
 
-    seq_printf(m, "[AESYS] UniFi SDIO Driver: %s %s %s\n",
+    seq_printf(m, "UniFi SDIO Driver: %s %s %s\n",
            CSR_WIFI_VERSION, __DATE__, __TIME__);
 #ifdef CSR_SME_USERSPACE
     seq_puts(m, "SME: CSR userspace ");

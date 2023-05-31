@@ -81,6 +81,13 @@ void CsrTimeUtcGet(CsrTimeUtc *tod, CsrTime *low, CsrTime *high)
 
     if (tod != NULL)
     {
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 0, 0)
+        struct timespec64 now;
+        ktime_get_real_ts64(&now);
+        tod->sec = now.tv_sec;
+        tod->msec = now.tv_nsec/1000000;
+#else
         struct timeval tv;
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 20, 0)
         tv.tv_sec = ts.tv_sec;
@@ -90,5 +97,6 @@ void CsrTimeUtcGet(CsrTimeUtc *tod, CsrTime *low, CsrTime *high)
 #endif
         tod->sec = tv.tv_sec;
         tod->msec = tv.tv_usec / 1000;
+#endif
     }
 }

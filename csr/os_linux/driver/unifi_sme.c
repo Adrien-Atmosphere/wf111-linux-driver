@@ -15,9 +15,10 @@
 #include "unifi_priv.h"
 #include "csr_wifi_hip_unifi.h"
 #include "csr_wifi_hip_conversions.h"
-
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,11,0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,4,0)
 #include <uapi/linux/sched/types.h>
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(4,11,0)
+#include <linux/sched/types.h>
 #endif
 
 
@@ -1117,7 +1118,11 @@ uf_ta_sample_ind_wq(struct work_struct *work)
             unifi_trace(priv, UDBG1, "%s new thread (RT) priority = %d\n",
                         priv->bh_thread.name, priv->bh_thread.prio);
             param.sched_priority = priv->bh_thread.prio;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 9, 0)
             sched_setscheduler(priv->bh_thread.thread_task, SCHED_FIFO, &param);
+#else
+            sched_set_fifo(priv->bh_thread.thread_task);
+#endif
         }
     } else
     {
@@ -1125,7 +1130,11 @@ uf_ta_sample_ind_wq(struct work_struct *work)
         {
             struct sched_param param;
             param.sched_priority = 0;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 9, 0)
             sched_setscheduler(priv->bh_thread.thread_task, SCHED_NORMAL, &param);
+#else
+            sched_set_normal(priv->bh_thread.thread_task, 0);
+#endif
             priv->bh_thread.prio = DEFAULT_PRIO;
             unifi_trace(priv, UDBG1, "%s new thread priority = %d\n",
                         priv->bh_thread.name, priv->bh_thread.prio);

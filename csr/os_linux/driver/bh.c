@@ -16,8 +16,10 @@
 #include "csr_wifi_hip_unifi.h"
 #include "unifi_priv.h"
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,11,0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,4,0)
 #include <uapi/linux/sched/types.h>
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(4,11,0)
+#include <linux/sched/types.h>
 #endif
 
 /*
@@ -57,7 +59,11 @@ uf_start_thread(unifi_priv_t *priv, struct uf_thread *thread, int (*func)(void *
             unifi_trace(priv, UDBG1, "%s thread (RT) priority = %d\n",
                         thread->name, bh_priority);
             param.sched_priority = bh_priority;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 9, 0)
             sched_setscheduler(thread->thread_task, SCHED_FIFO, &param);
+#else
+            sched_set_fifo(thread->thread_task);
+#endif
         } else if (bh_priority > MAX_RT_PRIO && bh_priority <= MAX_PRIO) {
             priv->bh_thread.prio = bh_priority;
             unifi_trace(priv, UDBG1, "%s thread priority = %d\n",

@@ -294,6 +294,7 @@ static const struct net_device_ops uf_netdev_ops =
 
 static u8 oui_rfc1042[P80211_OUI_LEN] = { 0x00, 0x00, 0x00 };
 static u8 oui_8021h[P80211_OUI_LEN]   = { 0x00, 0x00, 0xf8 };
+static const u8 rfc1042_header_mac[]  = { 0xaa, 0xaa, 0x03, 0x00, 0x00, 0x00 };
 
 
 /* Callback for event logging to blocking clients */
@@ -2605,6 +2606,8 @@ unifi_rx(unifi_priv_t *priv, CSR_SIGNAL *signal, bulk_data_param_t *bulkdata)
 
     CsrUint8 da[ETH_ALEN], sa[ETH_ALEN];
     CsrUint8 toDs, fromDs, frameType, macHeaderLengthInBytes = MAC_HEADER_SIZE;
+    CsrUint8 protectedFlag;
+    CsrUint16 keyInfo;
     CsrUint16 frameControl;
     netInterface_priv_t *interfacePriv;
     struct ethhdr ehdr;
@@ -2649,6 +2652,7 @@ unifi_rx(unifi_priv_t *priv, CSR_SIGNAL *signal, bulk_data_param_t *bulkdata)
     /* Point to the addresses */
     toDs = (skb->data[1] & 0x01) ? 1 : 0;
     fromDs = (skb->data[1] & 0x02) ? 1 : 0;
+    protectedFlag = (skb->data[1] & 0x40) ? 1 : 0;
 
     memcpy(da,(skb->data+4+toDs*12),ETH_ALEN);/* Address1 or 3 */
     memcpy(sa,(skb->data+10+fromDs*(6+toDs*8)),ETH_ALEN); /* Address2, 3 or 4 */
@@ -2718,9 +2722,47 @@ unifi_rx(unifi_priv_t *priv, CSR_SIGNAL *signal, bulk_data_param_t *bulkdata)
             && (proto != ETH_P_WAI)
 #endif
        ) {
+        if (!protectedFlag)
+        {
+            if (interfacePriv->protect || interfacePriv->handshakeStarted)
+            {
+                unifi_trace(priv, UDBG1, "%s: MA-PACKET indication with non-protected flag\n", __FUNCTION__);
+                unifi_net_data_free(priv, &bulkdata->d[0]);
+                func_exit();
+                return;
+            }
+        }
         queue = UF_CONTROLLED_PORT_Q;
     } else {
         queue = UF_UNCONTROLLED_PORT_Q;
+
+        if (toDs && interfacePriv->interfaceMode == CSR_WIFI_ROUTER_CTRL_MODE_AP)
+        {
+            if (memcmp(da, skb->data + MAC_HEADER_ADDR1_OFFSET, ETH_ALEN) != 0)
+            {
+                unifi_warning(priv, "%s: AP blocked forwarding the EAPOL frame\n", __FUNCTION__);
+                unifi_net_data_free(priv, &bulkdata->d[0]);
+                func_exit();
+                return;
+            }
+        }
+
+        keyInfo = ntohs(*((CsrUint16 *)(skb->data + macHeaderLengthInBytes + sizeof(llc_snap_hdr_t) + EAPOL_FRAME_KEY_INFO_OFFSET)));
+        if ((keyInfo & KEY_INFORMATION_TYPE) && !(keyInfo & KEY_INFORMATION_INSTALL))
+        {
+            switch(interfacePriv->interfaceMode)
+            {
+                case CSR_WIFI_ROUTER_CTRL_MODE_STA:
+                case CSR_WIFI_ROUTER_CTRL_MODE_AMP:
+                case CSR_WIFI_ROUTER_CTRL_MODE_IBSS:
+                case CSR_WIFI_ROUTER_CTRL_MODE_P2PCLI:
+                    interfacePriv->handshakeStarted = TRUE;
+                    interfacePriv->handshakeStartTime = CsrTimeGet(NULL);
+                    break;
+                default:
+                    break;
+            }
+        }
     }
 
     port_action = verify_port(priv, (unsigned char*)sa, queue, interfaceTag);
@@ -3830,6 +3872,56 @@ static struct notifier_block uf_netdev_notifier = {
 #endif /* CSR_SUPPORT_WEXT */
 
 
+static CsrUint8 validate_amsdu_frame(unifi_priv_t *priv, bulk_data_param_t *bulkdata)
+{
+    CsrUint32 offset;
+    CsrUint32 length = bulkdata->d[0].data_length;
+    CsrUint32 subframe_length, subframe_body_length;
+    CsrUint8 *ptr;
+    CsrUint8 *dot11_hdr_ptr = (CsrUint8*)bulkdata->d[0].os_data_ptr;
+    CsrUint16 frameControl;
+
+    frameControl = le16_to_cpu(*((CsrUint16*)dot11_hdr_ptr));
+    ptr = dot11_hdr_ptr + (((frameControl & IEEE802_11_FC_TO_DS_MASK) && (frameControl & IEEE802_11_FC_FROM_DS_MASK)) ? 30 : 24) + 2;
+    offset = ptr - dot11_hdr_ptr;
+
+    while (length > (offset + sizeof(struct ethhdr) + sizeof(llc_snap_hdr_t))) {
+        subframe_body_length = ntohs(((struct ethhdr*)ptr)->h_proto);
+        if (subframe_body_length > IEEE802_11_MAX_DATA_LEN) {
+           unifi_error(priv, "%s: bad subframe_body_length = %d\n", __FUNCTION__, subframe_body_length);
+           return 1;
+        }
+
+        subframe_length = sizeof(struct ethhdr) + subframe_body_length;
+
+        if (memcmp(((struct ethhdr*)ptr)->h_dest, rfc1042_header_mac, ETH_ALEN) == 0) {
+            unifi_warning(priv, "%s: potential aggregation attack\n", __FUNCTION__);
+            return 1;
+        }
+
+        if (!(frameControl & IEEE802_11_FC_TO_DS_MASK) && (frameControl & IEEE802_11_FC_FROM_DS_MASK)) {
+            if (!IS_MULTICAST_MAC(((struct ethhdr*)ptr)->h_dest)) {
+                if (memcmp(((struct ethhdr*)ptr)->h_dest, dot11_hdr_ptr + MAC_HEADER_ADDR1_OFFSET, ETH_ALEN) != 0) {
+                    unifi_warning(priv, "%s: potential aggregation attack\n", __FUNCTION__);
+                    return 1;
+                }
+            }
+        }
+        else if ((frameControl & IEEE802_11_FC_TO_DS_MASK) && !(frameControl & IEEE802_11_FC_FROM_DS_MASK)) {
+            if (memcmp(((struct ethhdr*)ptr)->h_source, dot11_hdr_ptr + MAC_HEADER_ADDR2_OFFSET, ETH_ALEN) != 0) {
+                unifi_warning(priv, "%s: potential aggregation attack\n", __FUNCTION__);
+                return 1;
+            }
+        }
+
+        subframe_length = (subframe_length + 3)&(~0x3);
+        ptr += subframe_length;
+        offset += subframe_length;
+    }
+    return 0;
+}
+
+
 static void
         process_amsdu(unifi_priv_t *priv, CSR_SIGNAL *signal, bulk_data_param_t *bulkdata)
 {
@@ -3852,15 +3944,16 @@ static void
     } 
     *qos_control_ptr &= ~(IEEE802_11_QC_A_MSDU_PRESENT);
 
+    if(validate_amsdu_frame(priv, bulkdata) != 0){
+        unifi_net_data_free(priv, &bulkdata->d[0]);
+        return;
+    }
+
     ptr = qos_control_ptr + 2;
     offset = dot11_hdr_size = ptr - dot11_hdr_ptr;
     
     while(length > (offset + sizeof(struct ethhdr) + sizeof(llc_snap_hdr_t))) {
         subframe_body_length = ntohs(((struct ethhdr*)ptr)->h_proto);
-        if(subframe_body_length > IEEE802_11_MAX_DATA_LEN) {
-            unifi_error(priv, "%s: bad subframe_body_length = %d\n", __FUNCTION__, subframe_body_length);
-            break;
-        }
         subframe_length = sizeof(struct ethhdr) + subframe_body_length;
         memset(&subframe_bulkdata, 0, sizeof(bulk_data_param_t));
 

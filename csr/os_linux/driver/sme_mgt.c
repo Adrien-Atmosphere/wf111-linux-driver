@@ -137,46 +137,24 @@ void CsrWifiSmeScanResultsGetCfmHandler(void* drvpriv, CsrWifiFsmEvent* msg)
         return;
     }
 
-    if(cfm->scanResultsCount <= 0)
-    {
-        unifi_trace(priv, UDBG1, "[AESYS] CsrWifiSmeScanResultsGetCfmHandler: no results.\n");
-
-        /* Handle no results case */
-        scanCopy = NULL;
+    /* Calc the size of the buffer reuired */
+    for (i = 0; i < cfm->scanResultsCount; ++i) {
+        const CsrWifiSmeScanResult *scan_result = &cfm->scanResults[i];
+        bytesRequired += scan_result->informationElementsLength;
     }
-    else
+
+    /* Take a Copy of the scan Results :-) */
+    scanCopy = CsrPmemAlloc(bytesRequired);
+    memcpy(scanCopy, cfm->scanResults, sizeof(CsrWifiSmeScanResult) * cfm->scanResultsCount);
+
+    /* Take a Copy of the Info Elements AND update the scan result pointers */
+    current_buff = (CsrUint8*)&scanCopy[cfm->scanResultsCount];
+    for (i = 0; i < cfm->scanResultsCount; ++i)
     {
-        /* Calc the size of the buffer reuired */
-        for (i = 0; i < cfm->scanResultsCount; ++i) {
-            const CsrWifiSmeScanResult *scan_result = &cfm->scanResults[i];
-            bytesRequired += scan_result->informationElementsLength;
-        }
-
-        /* Take a Copy of the scan Results :-) */
-        //[AESYS] scanCopy = CsrPmemAlloc(bytesRequired);
-        scanCopy = CsrPmemAllocVirtual(bytesRequired);
-
-        if(!scanCopy)
-        {
-            unifi_trace(priv, UDBG1, "[AESYS] CsrWifiSmeScanResultsGetCfmHandler: cannot allocate scanCopy memory.\n");
-
-            /* Simulate no scan results */
-            cfm->scanResultsCount = 0;
-        }
-        else
-        {
-            memcpy(scanCopy, cfm->scanResults, sizeof(CsrWifiSmeScanResult) * cfm->scanResultsCount);
-
-            /* Take a Copy of the Info Elements AND update the scan result pointers */
-            current_buff = (CsrUint8*)&scanCopy[cfm->scanResultsCount];
-            for (i = 0; i < cfm->scanResultsCount; ++i)
-            {
-                CsrWifiSmeScanResult *scan_result = &scanCopy[i];
-                CsrMemCpy(current_buff, scan_result->informationElements, scan_result->informationElementsLength);
-                scan_result->informationElements = current_buff;
-                current_buff += scan_result->informationElementsLength;
-            }
-        }
+        CsrWifiSmeScanResult *scan_result = &scanCopy[i];
+        CsrMemCpy(current_buff, scan_result->informationElements, scan_result->informationElementsLength);
+        scan_result->informationElements = current_buff;
+        current_buff += scan_result->informationElementsLength;
     }
 
     priv->sme_reply.reply_scan_results_count = cfm->scanResultsCount;

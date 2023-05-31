@@ -224,6 +224,16 @@ typedef CsrUint8 CsrWifiPacketType;
 #define PRIO_TO_NICE(prio)  ((prio) - MAX_RT_PRIO - 20)
 #endif
 
+#define IS_MULTICAST_MAC(mac) (mac[0] & 0x01)
+
+ /* The time [us] after the handshake procedure begins when plaintext frames will not be accepted */
+#define HANDSHAKE_SAFE_TIME_US 1000000
+
+/* The key information field of the EAPOL frame */
+#define EAPOL_FRAME_KEY_INFO_OFFSET 5
+#define KEY_INFORMATION_TYPE        0x0008
+#define KEY_INFORMATION_INSTALL     0x0040
+
 /* Module parameter variables */
 extern int buswidth;
 extern int sdio_clock;
@@ -826,6 +836,10 @@ typedef struct netInterface_priv
 #endif
 /* Track current patch loaded onto the chip */
     CsrUint8 patchMode;
+
+/* Info about handshake for protection against plaintext injection in a protected network */
+    CsrBool handshakeStarted;
+    CsrTime handshakeStartTime;
 } netInterface_priv_t;
 
 #ifndef ALLOW_Q_PAUSE
