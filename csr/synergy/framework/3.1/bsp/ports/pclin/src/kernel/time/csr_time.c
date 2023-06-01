@@ -89,12 +89,7 @@ void CsrTimeUtcGet(CsrTimeUtc *tod, CsrTime *low, CsrTime *high)
         tod->msec = now.tv_nsec/1000000;
 #else
         struct timeval tv;
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 20, 0)
-        tv.tv_sec = ts.tv_sec;
-        tv.tv_usec = ts.tv_nsec/1000;
-#else
         do_gettimeofday(&tv);
-#endif
         tod->sec = tv.tv_sec;
         tod->msec = tv.tv_usec / 1000;
 #endif

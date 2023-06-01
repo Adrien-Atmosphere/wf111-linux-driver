@@ -15,6 +15,7 @@
 #include "unifi_priv.h"
 #include "csr_wifi_hip_unifi.h"
 #include "csr_wifi_hip_conversions.h"
+
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5,4,0)
 #include <uapi/linux/sched/types.h>
 #elif LINUX_VERSION_CODE >= KERNEL_VERSION(4,11,0)
