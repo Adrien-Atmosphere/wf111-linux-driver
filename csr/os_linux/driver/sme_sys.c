@@ -13,7 +13,7 @@
  *
  * ---------------------------------------------------------------------------
  */
-
+#include <linux/etherdevice.h>
 #include "csr_wifi_hip_unifiversion.h"
 #include "unifi_priv.h"
 #include "csr_wifi_hip_conversions.h"
@@ -1220,7 +1220,11 @@ void CsrWifiRouterCtrlWifiOnResHandler(void *drvpriv, CsrWifiFsmEvent *msg)
         /* Store the MAC address in the netdev */
         for (i = 0; i < res->numInterfaceAddress; i++)
         {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 17, 0)
             memcpy(priv->netdev[i]->dev_addr, res->stationMacAddress[i].a, ETH_ALEN);
+#else
+            eth_hw_addr_set(priv->netdev[i], res->stationMacAddress[i].a);
+#endif
         }
 
         /* Copy version structure into the private versions field */
