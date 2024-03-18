@@ -71,7 +71,9 @@ static int In_use[MAX_UNIFI_DEVS];
  * Mutex to prevent UDI clients to open the character device before the priv
  * is created and initialised.
  */
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 37)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 4, 0)
+DEFINE_SEMAPHORE(Unifi_instance_mutex,1);
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 37)
 DEFINE_SEMAPHORE(Unifi_instance_mutex);
 #else
 DECLARE_MUTEX(Unifi_instance_mutex);

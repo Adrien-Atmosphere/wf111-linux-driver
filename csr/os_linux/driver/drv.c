@@ -128,7 +128,9 @@ static void udi_set_log_filter(ul_client_t *pcli,
 
 
 /* Mutex to protect access to  priv->sme_cli */
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 37)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 4, 0)
+DEFINE_SEMAPHORE(udi_mutex,1);
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 37)
 DEFINE_SEMAPHORE(udi_mutex);
 #else
 DECLARE_MUTEX(udi_mutex);
