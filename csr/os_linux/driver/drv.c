@@ -2134,7 +2134,11 @@ uf_create_debug_device(struct file_operations *fops)
     }
 
     /* Create a UniFi class */
+    #if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 4, 0)
+    unifi_class = class_create(UNIFI_NAME);
+    #else
     unifi_class = class_create(THIS_MODULE, UNIFI_NAME);
+    #endif
     if (IS_ERR(unifi_class)) {
         unifi_error(NULL, "Failed to create UniFi class\n");
 
